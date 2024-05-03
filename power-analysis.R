@@ -4,7 +4,6 @@
 
 pacman::p_load(pwr, InteractionPoweR)
 
-
 options(scipen=999)
 
 set.seed (12345)
