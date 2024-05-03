@@ -6,7 +6,7 @@ pacman::p_load(pwr, InteractionPoweR)
 
 options(scipen=999)
 
-set.seed (12345)
+set.seed (123456)
 
 ### Sample size 
 # Assuming a 5% lead is significant
