@@ -1,6 +1,6 @@
 #---------------------------------Power Analysis-------------------------------#
 #-Author: Francisca Castro ------------------------ Created: February 28, 2024-#
-#-R Version: 4.4.0 ------------------------------------- Revised: July 18, 2024-#
+#-R Version: 4.4.0 ---------------------------------- Revised: August 22, 2024-#
 
 pacman::p_load(pwr, InteractionPoweR, ggplot2)
 
@@ -8,63 +8,34 @@ options(scipen=999)
 
 set.seed (123456)
 
-####################### Power analysis for binary outcomes ####################
+#################### HI: effect of individual-elite congruence #################
 
-# Parameters for logistic regression power analysis
-odds_ratio <- 1.5
+# For this hypothesis, we just focus on the role of congruence, without taking
+# into account how elite-mobilized group congruence could affect the respondent's
+# evaluation of the candidate. Therefore, only the control group (no treatment)
+# is used in this analysis. 
+
+### Binary outcomes: eval_1 and eval_2 ###
+
+# Expected proportions for choosing candidates
+p_congruent_chosen <- 0.65  # Probability of choosing the congruent candidate
+p_incongruent_chosen <- 0.35  # Probability of choosing the incongruent candidate
+
+# Alpha and desired power
 alpha <- 0.05
-desired_power <- 0.80
-num_groups <- 3  # Two treatment groups and one control group
+desired_power <- 0.95
 
-# Convert odds ratio to Cohen's d (approximation)
-log_odds <- log(odds_ratio)
-cohen_d <- log_odds / sqrt(3.29)
+# Effect size (Cohen's h) for proportions
+effect_size_h <- ES.h(p_congruent_chosen, p_incongruent_chosen)
 
-# Power analysis function for a range of sample sizes
+# Power analysis (range of sample sizes)
 sample_sizes <- seq(30, 1000, by = 10)
 power_values <- sapply(sample_sizes, function(n) {
-  pwr_result <- pwr.p.test(h = cohen_d, n = n, sig.level = alpha, alternative = "two.sided")
+  pwr_result <- pwr.2p.test(h = effect_size_h, n = n, 
+                            sig.level = alpha, power = NULL, 
+                            alternative = "two.sided")
   pwr_result$power
 })
-
-# Create a data frame for plotting
-power_data <- data.frame(
-  SampleSize = sample_sizes,
-  Power = power_values
-)
-
-# Plot the power curve
-ggplot(power_data, aes(x = SampleSize, y = Power)) +
-  geom_line() +
-  geom_hline(yintercept = desired_power, linetype = "dashed", color = "red") +
-  labs(title = "Power Analysis for Logistic Regression",
-       x = "Sample Size per Group",
-       y = "Power") +
-  theme_minimal()
-
-# Calculate required sample size for each group to achieve desired power
-total_sample_size <- pwr.p.test(h = cohen_d, sig.level = alpha, power = desired_power, alternative = "two.sided")$n
-sample_size_per_group <- ceiling(total_sample_size / num_groups)
-cat("Required sample size per group:", sample_size_per_group, "\n")
-
-
-####################### Power analysis Continuous outcome ###################### 
-
-# Parameters for linear regression 
-effect_size <- 0.15  # Cohen's f2 for a medium effect size
-alpha <- 0.05
-desired_power <- 0.80
-num_predictors <- 5  # Number of predictors in the model
-
-# Function to calculate power for given sample size
-calculate_power <- function(n, u, f2, alpha) {
-  pwr_result <- pwr.f2.test(u = u, v = n - u - 1, f2 = f2, sig.level = alpha, power = NULL)
-  return(pwr_result$power)
-}
-
-# Power analysis for a range of sample sizes
-sample_sizes <- seq(30, 1000, by = 10)
-power_values <- sapply(sample_sizes, calculate_power, u = num_predictors, f2 = effect_size, alpha = alpha)
 
 # Data frame for plotting
 power_data <- data.frame(
@@ -73,58 +44,166 @@ power_data <- data.frame(
 )
 
 # Plot the power curve
-ggplot(power_data, aes(x = SampleSize, y = Power)) +
+power_plot_h1 <- ggplot(power_data, aes(x = SampleSize, y = Power)) +
   geom_line() +
   geom_hline(yintercept = desired_power, linetype = "dashed", color = "red") +
-  labs(title = "Power Analysis for Linear Regression",
-       x = "Sample Size",
+  labs(x = "Sample Size per Group",
        y = "Power") +
   theme_minimal()
 
-# Calculate required sample size for the desired power
-pwr_result_linear <- pwr.f2.test(u = num_predictors, f2 = effect_size, sig.level = alpha, power = desired_power)
-sample_size_total <- ceiling(pwr_result_linear$v + num_predictors + 1)
-cat("Required total sample size for linear regression:", sample_size_total, "\n")
+power_plot_h1
+
+ggsave("outputs/power_plot_h1.png", 
+       width = 11, height = 7, units = "cm", dpi = 600)
 
 
-# Calculate sample size per group assuming equal allocation to 3 groups
-num_groups <- 3
-sample_size_per_group <- ceiling(sample_size_total / num_groups)
-cat("Required sample size per group for linear regression:", sample_size_per_group, "\n")
+# Calculate required sample size for each group to achieve desired power
+total_sample_size_h1 <- pwr.2p.test(h = effect_size_h, sig.level = alpha, 
+                                    power = desired_power, 
+                                    alternative = "two.sided")$n
+
+total_sample_size_h1 # 56.59031
 
 
-#- Power analysis for H2 (continuous)
+### Continuous outcomes: eval_3 ###
 
-alpha <- 0.05
-desired_power <- 0.80
-sample_size <- 1600  # Initial sample size guess
-correlation_x1_y <- 0.20  # Correlation between predictor x1 and the outcome
-correlation_x2_y <- 0.10  # Correlation between predictor x2 and the outcome
-correlation_x1_x2 <- 0.09  # Correlation between predictors x1 and x2
+# Parameters 
+effect_size_d <- 0.70  
 
-# Calculate power for a range of interaction effect sizes
-h2_power <- power_interaction_r2(
-  N = sample_size,
-  r.x1.y = correlation_x1_y,
-  r.x2.y = correlation_x2_y,
-  r.x1.x2 = correlation_x1_x2,
-  r.x1x2.y = seq(0.01, 0.12, 0.005),  # Range of interaction effect sizes
-  alpha = alpha
+# Power analysis for a range of sample sizes
+power_values_2 <- sapply(sample_sizes, function(n) {
+  pwr_result <- pwr.t.test(d = effect_size_d, n = n, 
+                           sig.level = alpha, power = NULL, 
+                           type = "two.sample", alternative = "two.sided")
+  pwr_result$power
+})
+
+# Create a data frame for plotting
+power_data_2 <- data.frame(
+  SampleSize = sample_sizes,
+  Power = power_values_2
 )
-
-# Estimate the minimum detectable effect size for the desired power
-h2_estimate <- power_estimate(
-  power_data = h2_power,
-  x = "r.x1x2.y",
-  power_target = desired_power
-)
-
-# Estimated MDE
-round(h2_estimate, 3)
 
 # Plot the power curve
-power_curve_plot <- plot_power_curve(h2_power, x = "r.x1x2.y", power_target = desired_power) +
-  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))  # Adjust the margins as needed
+power_plot_h1_continuous <- ggplot(power_data_2, aes(x = SampleSize, y = Power)) +
+  geom_line() +
+  geom_hline(yintercept = desired_power, linetype = "dashed", color = "red") +
+  labs(x = "Sample Size per Group",
+       y = "Power") +
+  theme_minimal()
 
-ggsave("outputs/power_curve_plot.png", 
+power_plot_h1_continuous
+
+ggsave("outputs/power_plot_h1_continuous.png", 
        width = 11, height = 7, units = "cm", dpi = 600)
+
+# Calculate required sample size for each group to achieve desired power
+total_sample_size_h1_continuous <- pwr.t.test(d = effect_size_d, sig.level = alpha, 
+                                              power = desired_power, 
+                                              type = "two.sample", 
+                                              alternative = "two.sided")$n
+
+total_sample_size_h1_continuous #54.01938
+
+
+
+## H2b/3a: effect of individual-elite congruence and elite-group incongruence ##
+
+### Binary outcomes: eval_1 and eval_2 ###
+
+# Parameters
+p1_h2b <- 0.55
+p2_h2b <- 0.45
+alpha_h2b <- 0.05
+desired_power_h2b <- 0.95
+
+# Calculate effect size for H2b
+effect_size_h_h2b <- ES.h(p1_h2b, p2_h2b)
+
+# Power analysis (range of sample sizes) for H2b
+sample_sizes_h2b <- seq(30, 2000, by = 10)
+power_values_h2b <- sapply(sample_sizes_h2b, function(n) {
+  pwr_result_h2b <- pwr.2p.test(h = effect_size_h_h2b, n = n, 
+                                sig.level = alpha_h2b, power = NULL, 
+                                alternative = "two.sided")
+  pwr_result_h2b$power
+})
+
+# Create a data frame for plotting H2b
+power_data_h2b <- data.frame(
+  SampleSize = sample_sizes_h2b,
+  Power = power_values_h2b
+)
+
+# Plot the power curve for H2b
+power_plot_h2b <- ggplot(power_data_h2b, aes(x = SampleSize, y = Power)) +
+  geom_line() +
+  geom_hline(yintercept = desired_power_h2b, linetype = "dashed", color = "red") +
+  labs(x = "Sample Size per Group",
+       y = "Power") +
+  theme_minimal()
+
+power_plot_h2b
+
+ggsave("outputs/power_plot_h2b.png", power_plot_h2b, 
+       width = 11, height = 7, units = "cm", dpi = 600)
+
+# Calculate required sample size per group for H2b
+sample_size_per_group_h2b <- pwr.2p.test(h = effect_size_h_h2b, sig.level = alpha_h2b, 
+                                         power = desired_power_h2b, alternative = "two.sided")$n
+
+sample_size_per_group_h2b
+
+# Total sample size (for three groups) for H2b
+total_sample_size_h2b <- sample_size_per_group_h2b * 3
+
+total_sample_size_h2b
+
+### Continuous outcomes: eval_3 ###
+
+# Expected mean difference and standard deviation for eval_3
+mean_diff_h2b <- 1.5  # diff in means between groups
+sd_h2b <- 2.5         # SD of responses
+
+# Calculate Cohen's d for eval_3
+effect_size_d_h2b <- mean_diff_h2b / sd_h2b
+
+# Power analysis for a range of sample sizes for eval_3
+power_values_eval3_h2b <- sapply(sample_sizes_h2b, function(n) {
+  pwr_result_h2b <- pwr.t.test(d = effect_size_d_h2b, n = n, 
+                               sig.level = alpha_h2b, power = NULL, 
+                               type = "two.sample", alternative = "two.sided")
+  pwr_result_h2b$power
+})
+
+# Create a data frame for plotting eval_3
+power_data_eval3_h2b <- data.frame(
+  SampleSize = sample_sizes_h2b,
+  Power = power_values_eval3_h2b
+)
+
+# Plot the power curve for eval_3
+power_plot_eval3_h2b <- ggplot(power_data_eval3_h2b, aes(x = SampleSize, y = Power)) +
+  geom_line() +
+  geom_hline(yintercept = desired_power_h2b, linetype = "dashed", color = "red") +
+  labs(x = "Sample Size per Group",
+       y = "Power") +
+  theme_minimal()
+
+power_plot_eval3_h2b
+
+# Save and print the plot for eval_3
+ggsave("outputs/power_plot_eval3_h2b.png", power_plot_eval3_h2b, 
+       width = 11, height = 7, units = "cm", dpi = 600)
+
+# Calculate the required sample size per group for eval_3
+sample_size_per_group_h2b_eval3 <- pwr.t.test(d = effect_size_d_h2b, sig.level = alpha_h2b, 
+                                              power = desired_power_h2b, 
+                                              type = "two.sample", 
+                                              alternative = "two.sided")$n
+
+
+sample_size_per_group_h2b_eval3 #73.16746
+
+
+
