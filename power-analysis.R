@@ -40,8 +40,7 @@ power_values <- sapply(sample_sizes, function(n) {
 # Data frame for plotting
 power_data <- data.frame(
   SampleSize = sample_sizes,
-  Power = power_values
-)
+  Power = power_values)
 
 # Plot the power curve
 power_plot_h1 <- ggplot(power_data, aes(x = SampleSize, y = Power)) +
@@ -75,14 +74,12 @@ power_values_2 <- sapply(sample_sizes, function(n) {
   pwr_result <- pwr.t.test(d = effect_size_d, n = n, 
                            sig.level = alpha, power = NULL, 
                            type = "two.sample", alternative = "two.sided")
-  pwr_result$power
-})
+  pwr_result$power})
 
 # Create a data frame for plotting
 power_data_2 <- data.frame(
   SampleSize = sample_sizes,
-  Power = power_values_2
-)
+  Power = power_values_2)
 
 # Plot the power curve
 power_plot_h1_continuous <- ggplot(power_data_2, aes(x = SampleSize, y = Power)) +
@@ -126,14 +123,12 @@ power_values_h2b <- sapply(sample_sizes_h2b, function(n) {
   pwr_result_h2b <- pwr.2p.test(h = effect_size_h_h2b, n = n, 
                                 sig.level = alpha_h2b, power = NULL, 
                                 alternative = "two.sided")
-  pwr_result_h2b$power
-})
+  pwr_result_h2b$power})
 
 # Create a data frame for plotting H2b
 power_data_h2b <- data.frame(
   SampleSize = sample_sizes_h2b,
-  Power = power_values_h2b
-)
+  Power = power_values_h2b)
 
 # Plot the power curve for H2b
 power_plot_h2b <- ggplot(power_data_h2b, aes(x = SampleSize, y = Power)) +
@@ -173,8 +168,7 @@ power_values_eval3_h2b <- sapply(sample_sizes_h2b, function(n) {
   pwr_result_h2b <- pwr.t.test(d = effect_size_d_h2b, n = n, 
                                sig.level = alpha_h2b, power = NULL, 
                                type = "two.sample", alternative = "two.sided")
-  pwr_result_h2b$power
-})
+  pwr_result_h2b$power})
 
 # Create a data frame for plotting eval_3
 power_data_eval3_h2b <- data.frame(
